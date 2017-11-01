@@ -830,18 +830,19 @@ module FTP
     def get_text_file(remotefile, localfile = File.basename(remotefile),
                       &block) # :yield: line
       f = nil
-      result = nil
+#      result = nil
+	  result = String.new
       if localfile
         f = File.open(localfile, "w")
-      elsif !block_given?
-        result = String.new
+#      elsif !block_given?
+#        result = String.new
       end
       begin
         retrlines("RETR #{remotefile}") do |line, newline|
           l = newline ? line + "\n" : line
           f.try &.print(l)
-          block(line, newline)
-          result.try &.concat(l)
+          yield(line, newline)
+          result.try &.+(l)
         end
         return result
       ensure
@@ -869,14 +870,14 @@ module FTP
 
     #
     # Retrieves +remotefile+ in whatever mode the session is set (text or
-    # binary).  See #gettextfile and #get_binary_file.
+    # binary).  See #get_text_file and #get_binary_file.
     #
     def get(remotefile, localfile = File.basename(remotefile),
             blocksize = DEFAULT_BLOCKSIZE, &block) # :yield: data
       if @binary
         get_binary_file(remotefile, localfile, blocksize, &block)
       else
-        gettextfile(remotefile, localfile, &block)
+        get_text_file(remotefile, localfile, &block)
       end
     end
 
