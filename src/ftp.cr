@@ -64,7 +64,7 @@ module FTP
   #   ftp.login
   #   files = ftp.chdir('pub/lang/ruby/contrib')
   #   files = ftp.list('n*')
-  #   ftp.getbinaryfile('nif.rb-0.91.gz', 'nif.gz', 1024)
+  #   ftp.get_binary_file('nif.rb-0.91.gz', 'nif.gz', 1024)
   #   ftp.close
   # ```
   # === Example 2
@@ -73,7 +73,7 @@ module FTP
   #     ftp.login
   #     files = ftp.chdir('pub/lang/ruby/contrib')
   #     files = ftp.list('n*')
-  #     ftp.getbinaryfile('nif.rb-0.91.gz', 'nif.gz', 1024)
+  #     ftp.get_binary_file('nif.rb-0.91.gz', 'nif.gz', 1024)
   #   end
   # ```
   # == Major Methods
@@ -773,24 +773,25 @@ module FTP
     def get_binary_file(remotefile, localfile = File.basename(remotefile),
                         blocksize = DEFAULT_BLOCKSIZE, &block) # :yield: data
       f = nil
-      result = nil
+#      result = nil
+      result = String.new
       if localfile
         if @resume
-          rest_offset = File.size?(localfile)
-          f = open(localfile, "a")
+          rest_offset = File.size(localfile)
+          f = File.open(localfile, "a")
         else
           rest_offset = nil
-          f = open(localfile, "w")
+          f = File.open(localfile, "w")
         end
-      elsif !block_given?
-        result = String.new
+#      elsif !block_given?
+#        result = String.new
       end
       begin
-        f.try &.binmode
+#        f.try &.binmode
         retrbinary("RETR #{remotefile}", blocksize, rest_offset) do |data|
           f.try &.write(data)
-          block(data)
-          result.try &.concat(data)
+          yield(data)
+          result.try &.+("data")
         end
         return result
       ensure
@@ -868,12 +869,12 @@ module FTP
 
     #
     # Retrieves +remotefile+ in whatever mode the session is set (text or
-    # binary).  See #gettextfile and #getbinaryfile.
+    # binary).  See #gettextfile and #get_binary_file.
     #
     def get(remotefile, localfile = File.basename(remotefile),
             blocksize = DEFAULT_BLOCKSIZE, &block) # :yield: data
       if @binary
-        getbinaryfile(remotefile, localfile, blocksize, &block)
+        get_binary_file(remotefile, localfile, blocksize, &block)
       else
         gettextfile(remotefile, localfile, &block)
       end
